@@ -7,9 +7,9 @@
 </head>
 <body>
 {{ if .InvalidPath }}
-The url {{ .URL }} is an invalid path on this service.
+The url <code class="err">{{ .URL }}</code> is an invalid path on this service.
 {{ else }}
-The url {{ .URL }} was not found on this service.
+The url <code class="err">{{ .URL }}</code> was not found on this service.
 {{ end }}
 </body>
 </html>

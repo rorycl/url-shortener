@@ -7,7 +7,7 @@ import (
 )
 
 //go:embed data
-var data embed.FS
+var testData embed.FS
 
 // TestFSMount tests to see if the static and templates filesystems can
 // be mounted and read
@@ -19,8 +19,8 @@ func TestFSMount(t *testing.T) {
 		path          string
 		ebd           embed.FS
 	}{
-		{"production", false, "data", data}, // production embed fs doesn't need arguments
-		{"development", true, "data", data},
+		{"production", false, "data", testData}, // production embed fs doesn't need arguments
+		{"development", true, "data", testData},
 	}
 
 	for _, tc := range testCases {

@@ -27,35 +27,29 @@ var data fs.FS
 var dataPath = "data"
 var dataFile = "pd-short-urls.csv"
 
+// defaults
 const defaultPort = "8000"
 const defaultAddr = "0.0.0.0"
 
-func (s *server) serve() {
-
-	log.Printf("serving on %s", s.FullAddress())
-
+// run the server
+func (s *server) serve() error {
 	r := http.NewServeMux()
 
-	// mount static filepath
-	r.PathPrefix("/static/").Handler(
-		http.StripPrefix("/static/",
-			http.FileServer(http.FS(s.static)),
-		),
-	)
-
-	// routes
-	r.HandleFunc("GET /{$}", home)
+	// routes using go's new 1.22 routes
+	r.HandleFunc("GET /{$}", s.home)
 	r.HandleFunc("GET /{shortURL}", s.redirector)
-	r.HandleFunc("GET /{anyURL...}", notFound)
+	r.HandleFunc("GET /{anyURL...}", s.invalid)
+	r.Handle("GET /static/", s.staticFiles())
 
-	// middleware
+	// middleware; consider throttling middleware too
+	// gorilla mux middleware "Add" is nice also
 	logging := func(handler http.Handler) http.Handler {
 		return handlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
 	recovery := func(handler http.Handler) http.Handler {
 		return handlers.RecoveryHandler()(handler)
 	}
-	chainedHandlers := alice.New(recovery, logging, r)
+	chainedHandlers := alice.New(recovery, logging).Then(r)
 
 	// configure server options
 	httpServer := &http.Server{
@@ -68,37 +62,72 @@ func (s *server) serve() {
 		IdleTimeout:       30 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
 	}
-	log.Printf("serving on %s", addr, port)
 
-	err := listenAndServe(httpServer)
+	if s.inDevelopment {
+		fmt.Printf("serving on %s", s.FullAddress())
+	}
+
+	err := httpServer.ListenAndServe()
 	if err != nil {
 		log.Printf("fatal server error: %v", err)
 	}
+	return err
 }
 
-func (s server) FullAddress() string {
+// FullAddress makes a full address of the addr and port
+func (s *server) FullAddress() string {
 	return strings.Join([]string{s.addr, s.port}, ":")
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "home")
+// staticFiles mounts the static file fs.FS
+func (s *server) staticFiles() http.Handler {
+	return http.StripPrefix("/"+staticPath+"/",
+		http.FileServer(http.FS(s.static)),
+	)
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
+// home is a home page handler
+func (s *server) home(w http.ResponseWriter, r *http.Request) {
+	err := s.homeTpl.Execute(w, struct{ Title string }{"Home"})
+	if err != nil {
+		errorOutput(w, "home", err)
+	}
+}
+
+// invalid is a 404 handler for invalid paths
+func (s *server) invalid(w http.ResponseWriter, r *http.Request) {
 	anyURL := r.PathValue("anyURL")
+	vars := struct {
+		Title, URL  string
+		InvalidPath bool
+	}{"Invalid Path", html.EscapeString(anyURL), true}
 	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(w, "The url %s is invalid", html.EscapeString(anyURL))
+	err := s.notFoundTpl.Execute(w, vars)
+	if err != nil {
+		errorOutput(w, "not found", err)
+	}
 }
 
+// redirector is the main handler, which falls through to a 404 if no
+// short url key can be found in s.urlMap. Otherwise the user is
+// redirected with a 301 (StatusMovedPermanently) redirect.
 func (s *server) redirector(w http.ResponseWriter, r *http.Request) {
 	shortURL := r.PathValue("shortURL")
 	longURL, ok := s.urlMap[shortURL]
 	if ok {
-		fmt.Fprintf(w, "%s -> \n%s", shortURL, longURL)
+		http.Redirect(w, r, longURL, http.StatusMovedPermanently)
 		return
 	}
+	// short code not found
+	vars := struct {
+		Title, URL  string
+		InvalidPath bool
+	}{"Redirection not found", html.EscapeString(shortURL), false}
 	w.WriteHeader(http.StatusNotFound)
-	fmt.Fprintf(w, "The url %s was not found", html.EscapeString(shortURL))
+	err := s.notFoundTpl.Execute(w, vars)
+	if err != nil {
+		errorOutput(w, "redirection not found", err)
+	}
 }
 
 func main() {
@@ -109,18 +138,20 @@ func main() {
 	s.serve()
 }
 
-// server describes the main settings for the server
+// server holds the main settings for the server
 type server struct {
 	urlMap        map[string]string // the map of short to full urls
 	inDevelopment bool              // use the file system or embedded resources
 	addr          string
 	port          string
-	templates     fs.FS // fs.FS to templates
-	static        fs.FS // fs.FS to static resources
-	data          fs.FS // fs.FS to csv file of short to full urls
+	templates     fs.FS // templates
+	static        fs.FS // static resources
+	data          fs.FS // csv file with short,full urls
+	homeTpl       tpl
+	notFoundTpl   tpl
 }
 
-// newServer creates a new server
+// newServer creates a new server and attaches various resources
 func newServer(dev bool, addr, port string) (*server, error) {
 	var err error
 	if addr == "" {
@@ -149,6 +180,16 @@ func newServer(dev bool, addr, port string) (*server, error) {
 		return &s, fmt.Errorf("could not attach template filesystem: %v", err)
 	}
 
+	// templates
+	s.homeTpl, err = TplParse(s.inDevelopment, s.templates, "home.html")
+	if err != nil {
+		return &s, fmt.Errorf("could not load home template: %v", err)
+	}
+	s.notFoundTpl, err = TplParse(s.inDevelopment, s.templates, "404.html")
+	if err != nil {
+		return &s, fmt.Errorf("could not load 404 template: %v", err)
+	}
+
 	// load urls
 	dataFile, err := s.data.Open(dataFile)
 	if err != nil {
@@ -160,4 +201,11 @@ func newServer(dev bool, addr, port string) (*server, error) {
 	}
 
 	return &s, nil
+}
+
+// errorOutput is a convenience func for reporting errors
+func errorOutput(w http.ResponseWriter, source string, err error) {
+	log.Printf("%s template error %v", source, err)
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintf(w, "template writing problem at %s: %s", source, err.Error())
 }
