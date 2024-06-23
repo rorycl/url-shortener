@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{.Title}}</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" type="image/svg" href="./static/favicon.svg">
+</head>
+<body>
+<h1>URL Shortener</h1>
+<p>This extremely simple service redirects short urls to longer ones. The urls are provided in a csv file in the
+<code>data</code> directory.</p>
+<h2>Examples:</h2>
+<pre>
+url            │ page                                  │ status 
+───────────────+───────────────────────────────────────+─────────────────
+/              │ home (this page)                      │ 200 
+/dbd           │ www.gov.uk/government/publications... │ 301
+/bilbo         │ not found                             │ 404
+/bilbo/baggins │ not found                             │ 404
+</pre>
+</body>
+</html>

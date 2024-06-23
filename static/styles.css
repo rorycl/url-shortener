@@ -1,0 +1,5 @@
+* {font-family: Roboto, Helvetica, sans-serif; font-size: 12pt;}
+body {margin: 50px 50px; max-width: 600px; background-color:#fdfdfd;}
+h1 {font-size: 14pt; padding: 0 0 9px; color: red; }
+h2 {font-size: 12pt; padding: 0 0 9px; color: blue; }
+pre, code {font-family: monospace, monospace; font-size: 10pt; }

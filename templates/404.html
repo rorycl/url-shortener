@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{.Title}}</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" type="image/svg" href="./static/favicon.svg">
+</head>
+<body>
+{{ if .InvalidPath }}
+The url {{ .URL }} is an invalid path on this service.
+{{ else }}
+The url {{ .URL }} was not found on this service.
+{{ end }}
+</body>
+</html>
