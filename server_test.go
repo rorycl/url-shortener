@@ -52,6 +52,7 @@ func TestServerDevelopment(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			status, body, err = httpClient(tt.method, tt.url)
 			if err != nil {
 				t.Fatal(err)

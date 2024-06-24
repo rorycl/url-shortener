@@ -3,7 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/jessevdk/go-flags"
@@ -20,6 +23,9 @@ type Options struct {
 
 var earlyExitError error = errors.New("early exit error")
 
+// output sets the io.Writer for output
+var output io.Writer = os.Stdout
+
 var usage string = `
 A url-shortening web server
 
@@ -31,22 +37,34 @@ startup.
 `
 
 // getFlags parses flags
-func getFlags() (Options, error) {
+func getOptions() (Options, error) {
 	var options Options
 	var parser = flags.NewParser(&options, flags.Default)
 	parser.Usage = usage
 
 	if _, err := parser.Parse(); err != nil {
 		if !flags.WroteHelp(err) {
-			parser.WriteHelp(os.Stdout)
+			parser.WriteHelp(output)
 		}
 		return options, earlyExitError
+	}
+	if net.ParseIP(options.IPAddress) == nil {
+		return options, errors.New("invalid ip address")
+	}
+	if _, err := strconv.Atoi(options.Port); err != nil {
+		return options, errors.New("invalid network port")
+	}
+	if options.Timeout < (time.Second * 2) {
+		return options, errors.New("timeout shorter than 2 seconds")
+	}
+	if options.Workers < 2 {
+		return options, errors.New("at least one worker is needed")
 	}
 	return options, nil
 }
 
 func main() {
-	options, err := getFlags()
+	options, err := getOptions()
 	if err != nil {
 		os.Exit(1)
 	}

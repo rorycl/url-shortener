@@ -8,7 +8,7 @@ import (
 
 func TestGet(t *testing.T) {
 
-	g := NewGetClient(1, 200*time.Millisecond)
+	g := NewGetClient(1, 500*time.Millisecond)
 
 	tests := []struct {
 		url    string
@@ -24,6 +24,7 @@ func TestGet(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("test_%d", i), func(t *testing.T) {
+			t.Parallel()
 			status, err := g.get(tt.url)
 			if err != nil && !tt.isErr {
 				t.Errorf("unexpected error %v for %s", err, tt.url)

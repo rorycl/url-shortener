@@ -64,6 +64,7 @@ func TestURLs(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("subtest_%d", i), func(t *testing.T) {
+			t.Parallel()
 			s := strings.NewReader(tt.input)
 			m, err := urls(s)
 			if err == nil && tt.isErr {
