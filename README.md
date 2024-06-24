@@ -40,7 +40,9 @@ Help Options:
 
 ```
 
-<img width="1000" src="static/example.png" />
+Screenshot:
+
+<img width="615" src="static/example.png" />
 
 ## Licence
 
