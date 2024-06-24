@@ -14,11 +14,11 @@ import (
 
 // Options are the command line options
 type Options struct {
-	IPAddress   string        `short:"i" long:"ipAddress" default:"0.0.0.0" description:"ipaddress"`
+	IPAddress   string        `short:"i" long:"ipaddress" default:"0.0.0.0" description:"ipaddress"`
 	Port        string        `short:"p" long:"port" default:"8000" description:"port"`
 	Development bool          `short:"d" long:"development" description:"run in development mode"`
-	Timeout     time.Duration `short:"t" long:"timeout" default:"5s" description:"http client timeout"`
-	Workers     uint          `short:"w" long:"workers" default:"8" description:"http client workers"`
+	Timeout     time.Duration `short:"t" long:"timeout" default:"5s" description:"development url checker timeout"`
+	Workers     uint          `short:"w" long:"workers" default:"8" description:"development url checker workers"`
 }
 
 var earlyExitError error = errors.New("early exit error")
@@ -27,14 +27,14 @@ var earlyExitError error = errors.New("early exit error")
 var output io.Writer = os.Stdout
 
 var usage string = `
-A url-shortening web server
+
+A web server for redirecting short urls.
 
 This uses a simple csv file of short,long urls as a database.
 
 Run with the -d/-development flag to run in development mode, providing
 live template reloads. In development mode, the urls are also checked at
-startup.
-`
+startup.`
 
 // getFlags parses flags
 func getOptions() (Options, error) {
