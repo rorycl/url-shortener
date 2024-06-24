@@ -11,7 +11,7 @@ the `static` directory.
 
 [Try it out on GCP](https://url-shortener-c35tmtbs2a-nw.a.run.app/)
 
-The example csv file can be found [here](blob/main/data/short-urls.csv).
+The example csv file can be found [here](https://github.com/rorycl/url-shortener/blob/main/data/short-urls.csv).
 
 In development mode live reloading of the (minimal) web templates is
 supported, and the remote urls are checked on startup.
