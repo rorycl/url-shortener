@@ -12,6 +12,8 @@ test:
 	go test ./... -coverprofile=coverage.out
 	go tool cover -func coverage.out | tee cover.rpt
 	go tool cover -html=coverage.out -o cover.html
+
+coverage-ok:
 	cat cover.rpt | grep "total:" | awk '{print ((int($$3) > ${COVERAGE_AMT}) != 1) }'
 
 clean:
