@@ -7,6 +7,8 @@ v0.0.1 : 24 June 2024 : first release
 This web service uses a csv file to provide short urls which redirect to
 remote urls.
 
+[Try it out on GCP](https://url-shortener-c35tmtbs2a-nw.a.run.app/)
+
 In development mode live reloading of the (minimal) web templates is
 supported, and the remote urls are checked on startup.
 

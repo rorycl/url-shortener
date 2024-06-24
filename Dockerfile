@@ -20,4 +20,4 @@ FROM gcr.io/distroless/base AS base
 WORKDIR /
 EXPOSE 8000
 COPY --from=dev /build/url-shortener /
-CMD ["/webserver", "--address", "0.0.0.0", "--port", "8000"]
+CMD ["/url-shortener", "-i", "0.0.0.0", "-p", "8000"]
