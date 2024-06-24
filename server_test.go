@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -27,7 +27,6 @@ func TestServerDevelopment(t *testing.T) {
 			os.Exit(1)
 		}
 		time.Sleep(1 * time.Second)
-		return
 	}()
 
 	var status int
@@ -106,7 +105,7 @@ func httpClient(method, url string) (int, string, error) {
 	defer res.Body.Close()
 	status = res.StatusCode
 
-	bodyBytes, err := ioutil.ReadAll(res.Body)
+	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		return status, body, fmt.Errorf("could not read body %v", err)
 	}
@@ -133,7 +132,7 @@ func (t *thisRWriter) WriteHeader(status int) {
 func TestErrorOutput(t *testing.T) {
 	trw := &thisRWriter{}
 	errorOutput(trw, "tpl", errors.New("tpl1"))
-	if got, want := string(trw.b.Bytes()), "template writing problem at tpl: tpl1"; got != want {
+	if got, want := trw.b.String(), "template writing problem at tpl: tpl1"; got != want {
 		t.Errorf("got %s != want %s", got, want)
 	}
 }

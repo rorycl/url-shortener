@@ -80,5 +80,9 @@ func main() {
 		fmt.Printf("server setup error %v", err)
 		os.Exit(1)
 	}
-	s.serve()
+	err = s.serve()
+	if err != nil {
+		fmt.Printf("server error %v", err)
+		os.Exit(1)
+	}
 }

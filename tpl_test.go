@@ -38,6 +38,9 @@ func TestTplReloading(t *testing.T) {
 			dir = os.DirFS("data")
 		} else {
 			dir, err = fs.Sub(tmpFS, "data")
+			if err != nil {
+				t.Fatalf("fs.Sub error %v", err)
+			}
 		}
 
 		rd, err := fs.ReadDir(dir, ".")
@@ -51,6 +54,9 @@ func TestTplReloading(t *testing.T) {
 
 		// resync
 		tpl, err := TplParse(inDevelopment, dir, filepath.Base(file.Name()))
+		if err != nil {
+			t.Fatalf("tplParse error %v", err)
+		}
 		update1 := tpl.updated
 
 		// write second version

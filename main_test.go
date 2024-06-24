@@ -111,7 +111,7 @@ func TestGetOptions(t *testing.T) {
 				t.Errorf("workers %v expected %v", options.Workers, tt.workers)
 			}
 			if showBuf {
-				fmt.Println(string(buf.Bytes()))
+				fmt.Println(buf.String())
 			}
 
 		})
