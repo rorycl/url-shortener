@@ -1,6 +1,6 @@
 # url-shortener
 
-v0.0.1 : 24 June 2024 : first release
+v0.0.3 : 24 June 2024 : deploy example to GCP
 
 ## Resolve short urls and redirect them
 
