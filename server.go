@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+	_ "embed"
 	"fmt"
 	"html"
 	"io/fs"
@@ -14,18 +16,18 @@ import (
 	"github.com/justinas/alice"
 )
 
-// go:embed templates
-var templates fs.FS
+//go:embed templates
+var templatesFS embed.FS
 var templatePath = "templates"
 
-// go:embed static
-var static fs.FS
+//go:embed static
+var staticFS embed.FS
 var staticPath = "static"
 
-// go:embed data
-var data fs.FS
+//go:embed data
+var dataFS embed.FS
 var dataPath = "data"
-var dataFile = "pd-short-urls.csv"
+var dataFile = "short-urls.csv"
 
 // defaults
 const defaultPort = "8000"
@@ -63,10 +65,7 @@ func (s *server) serve() error {
 		ReadHeaderTimeout: 2 * time.Second,
 	}
 
-	if s.inDevelopment {
-		fmt.Printf("serving on %s", s.FullAddress())
-	}
-
+	log.Printf("Running server on %s", s.FullAddress())
 	err := httpServer.ListenAndServe()
 	if err != nil {
 		log.Printf("fatal server error: %v", err)
@@ -77,6 +76,15 @@ func (s *server) serve() error {
 // FullAddress makes a full address of the addr and port
 func (s *server) FullAddress() string {
 	return strings.Join([]string{s.addr, s.port}, ":")
+}
+
+// vals returns the long urls
+func (s *server) vals() []string {
+	vSlice := []string{}
+	for _, v := range s.urlMap {
+		vSlice = append(vSlice, v)
+	}
+	return vSlice
 }
 
 // staticFiles mounts the static file fs.FS
@@ -130,14 +138,6 @@ func (s *server) redirector(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
-	s, err := newServer(true, "0.0.0.0", "8001")
-	if err != nil {
-		log.Fatal(err)
-	}
-	s.serve()
-}
-
 // server holds the main settings for the server
 type server struct {
 	urlMap        map[string]string // the map of short to full urls
@@ -149,10 +149,12 @@ type server struct {
 	data          fs.FS // csv file with short,full urls
 	homeTpl       tpl
 	notFoundTpl   tpl
+	httpTimeout   time.Duration // http client timeout
+	httpWorkers   int
 }
 
 // newServer creates a new server and attaches various resources
-func newServer(dev bool, addr, port string) (*server, error) {
+func newServer(dev bool, addr, port string, timeout time.Duration, workers int) (*server, error) {
 	var err error
 	if addr == "" {
 		addr = defaultAddr
@@ -164,20 +166,22 @@ func newServer(dev bool, addr, port string) (*server, error) {
 		inDevelopment: dev,
 		addr:          addr,
 		port:          port,
+		httpTimeout:   timeout,
+		httpWorkers:   workers,
 	}
 
 	// attach file systems
-	s.templates, err = NewFileSystem(s.inDevelopment, templatePath, templates)
+	s.templates, err = NewFileSystem(s.inDevelopment, templatePath, templatesFS)
 	if err != nil {
 		return &s, fmt.Errorf("could not attach template filesystem: %v", err)
 	}
-	s.static, err = NewFileSystem(s.inDevelopment, staticPath, static)
+	s.static, err = NewFileSystem(s.inDevelopment, staticPath, staticFS)
 	if err != nil {
-		return &s, fmt.Errorf("could not attach template filesystem: %v", err)
+		return &s, fmt.Errorf("could not attach static filesystem: %v", err)
 	}
-	s.data, err = NewFileSystem(s.inDevelopment, dataPath, data)
+	s.data, err = NewFileSystem(s.inDevelopment, dataPath, dataFS)
 	if err != nil {
-		return &s, fmt.Errorf("could not attach template filesystem: %v", err)
+		return &s, fmt.Errorf("could not attach data filesystem: %v", err)
 	}
 
 	// templates
@@ -198,6 +202,13 @@ func newServer(dev bool, addr, port string) (*server, error) {
 	s.urlMap, err = urls(dataFile)
 	if err != nil {
 		return &s, fmt.Errorf("could not load urls: %v", err)
+	}
+
+	// verify urls if in development
+	if s.inDevelopment {
+		g := NewGetClient(s.httpWorkers, s.httpTimeout)
+		count, errCount := g.Check(s.vals())
+		fmt.Printf("url check reported %d errors in %d url checks\n", errCount, count)
 	}
 
 	return &s, nil

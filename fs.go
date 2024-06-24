@@ -17,7 +17,9 @@ func NewFileSystem(inDevelopment bool, path string, ebed fs.FS) (fs.FS, error) {
 
 	// use embedded filesystem if not in development
 	if !inDevelopment {
-		return fs.Sub(ebed, path)
+		var err error
+		f, err = fs.Sub(ebed, path)
+		return f, err
 	}
 
 	// otherwise use direct path (allows live reloading of templates, etc)

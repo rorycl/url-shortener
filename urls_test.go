@@ -83,7 +83,7 @@ func TestURLs(t *testing.T) {
 
 // TestURLData tests the stored csv file
 func TestURLData(t *testing.T) {
-	f, err := os.Open("data/pd-short-urls.csv")
+	f, err := os.Open("data/short-urls.csv")
 	if err != nil {
 		t.Fatal(err)
 	}

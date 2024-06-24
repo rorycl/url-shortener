@@ -1,7 +1,10 @@
 package main
 
 import (
+	"embed"
+	_ "embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,17 +19,29 @@ func writer(file *os.File, contents string) error {
 	return file.Sync()
 }
 
+//go:embed data
+var tmpFS embed.FS
+
 // Test reloading of development templates
 func TestTplReloading(t *testing.T) {
 
 	for _, inDevelopment := range []bool{true, false} {
 
-		dir := os.DirFS("/tmp")
-		file, err := os.CreateTemp("/tmp", "tpl_test")
+		var dir fs.FS
+
+		file, err := os.Create("data/tmpFile")
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer os.Remove(file.Name())
+
+		if inDevelopment {
+			dir = os.DirFS("data")
+		} else {
+			dir, err = fs.Sub(tmpFS, "data")
+		}
+
+		rd, err := fs.ReadDir(dir, ".")
+		t.Logf("dev %t dir %v err %v\n", inDevelopment, rd, err)
 
 		// write first version
 		err = writer(file, "---\ntitle {{ .Title }}\n")

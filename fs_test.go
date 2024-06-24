@@ -34,7 +34,7 @@ func TestFSMount(t *testing.T) {
 			d, err := fs.ReadDir(mount, ".")
 			t.Log(d, err)
 
-			_, err = fs.ReadFile(mount, "pd-short-urls.csv")
+			_, err = fs.ReadFile(mount, "short-urls.csv")
 			if err != nil {
 				t.Error(err)
 			}

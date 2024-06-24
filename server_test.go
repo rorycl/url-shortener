@@ -14,7 +14,7 @@ import (
 
 func TestServerDevelopment(t *testing.T) {
 
-	ns, err := newServer(true, "127.0.0.1", "8765")
+	ns, err := newServer(true, "127.0.0.1", "8765", 200*time.Millisecond, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
