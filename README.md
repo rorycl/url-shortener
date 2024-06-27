@@ -1,6 +1,6 @@
 # url-shortener
 
-v0.0.3 : 24 June 2024 : deploy example to GCP
+v0.0.4 : 27 June 2024 : bugfix -- drain httpclient connections
 
 ## Resolve short urls and redirect them
 
