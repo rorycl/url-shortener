@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -89,17 +90,17 @@ func (g *getClient) Check(urls []string) (count int, errorCount int) {
 }
 
 // get gets a URL, reporting the status and erroring if the page is not
-// of an html type
+// of an html type.
 func (g *getClient) get(url string) (status int, err error) {
 	resp, err := g.client.Get(url)
-	if err != nil {
-		return status, err
+	if resp != nil {
+		status = resp.StatusCode
+		_, err = io.Copy(io.Discard, resp.Body)
+		if err != nil {
+			return 0, fmt.Errorf("body discard error: %w", err)
+		}
+		resp.Body.Close()
 	}
-	status = resp.StatusCode
-	/* not needed if some urls are, for example, PDFs
-	if ct := resp.Header.Get("Content-Type"); !strings.Contains(ct, "text/html") {
-		return status, NonHTMLPageType
-	}
-	*/
-	return status, nil
+	return status, err
+
 }
